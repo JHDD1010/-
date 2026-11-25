@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field
 class SourceParagraph:
     text: str
     level: int = 0
+    block: int = 0  # 같은 도형(텍스트 상자)에서 나온 단락은 같은 번호
 
 
 @dataclass
@@ -41,6 +42,9 @@ class SourceImage:
 class SourceSlide:
     number: int
     title: str = ""
+    subtitle: str = ""
+    layout_name: str = ""
+    is_title_slide: bool = False  # 원본에서 표지용 제목(CENTER_TITLE)을 쓴 슬라이드
     paragraphs: list[SourceParagraph] = field(default_factory=list)
     tables: list[SourceTable] = field(default_factory=list)
     images: list[SourceImage] = field(default_factory=list)
@@ -49,10 +53,17 @@ class SourceSlide:
 
     def to_prompt_dict(self) -> dict:
         """Claude 에 넘길 텍스트 표현 (이미지 바이너리 제외)."""
+        blocks: dict[int, list[str]] = {}
+        for p in self.paragraphs:
+            blocks.setdefault(p.block, []).append(("  " * p.level) + p.text)
         return {
             "number": self.number,
+            "source_layout": self.layout_name,
+            "is_cover": self.is_title_slide,
             "title": self.title,
-            "paragraphs": [{"text": p.text, "level": p.level} for p in self.paragraphs],
+            "subtitle": self.subtitle,
+            # 텍스트 상자 단위로 묶은 단락 (도형 하나 = 블록 하나, 들여쓰기 = 수준)
+            "text_blocks": list(blocks.values()),
             "tables": [t.rows for t in self.tables],
             "images": [
                 {
@@ -89,6 +100,7 @@ class PlannedSlide(BaseModel):
     bullets: list[Bullet] = Field(default_factory=list)
     table: Table | None = None
     image_ids: list[str] = Field(default_factory=list, description="원본에서 가져올 이미지 id 목록")
+    footnote: str = Field(default="", description="각주/출처 (레이아웃에 각주 칸이 있을 때 슬라이드 하단에 작게 표시)")
     notes: str = Field(default="", description="발표자 노트")
     source_slides: list[int] = Field(default_factory=list, description="이 슬라이드의 근거가 된 원본 슬라이드 번호")
 

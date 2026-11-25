@@ -105,6 +105,12 @@
 | **팀** | Team Slide, 4 Pictures · Team Slide, 9 Pictures | 원형 사진 3.09 cm + 이름 칸 |
 | **기타** | Blank Slide · DEFAULT · Title with Content (다크 M1) | |
 
+### 다크 마스터의 레이아웃 이름 주의
+
+다크 테마는 dk1/lt1 이 뒤집혀 있어서 **이름과 실제 배경이 반대**로 나옵니다.
+`Title, Subheadline (White Background)` 가 어두운 배경, `(Black Background)` 가 밝은 회색 배경입니다.
+다크 덱 표지에는 `(White Background)` 레이아웃을 씁니다 (`config/mb_dark.toml` 에 반영).
+
 ### placeholder 역할 주의 (변환기에 직접 영향)
 
 - **부제(Subheadline)는 SUBTITLE이 아니라 BODY placeholder**입니다 (제목 바로 아래, 높이 1.2~1.55 cm). 표지에서만 SUBTITLE 유형을 씁니다.
@@ -152,5 +158,7 @@
 | 6 | 색은 테마 슬롯(`tx1`, `accent2` …)으로 지정 | 라이트/다크 공용 |
 | 7 | 보안 등급 라벨(`INTERNAL` / `CONFIDENTIAL`), 강조 바 같은 장식을 옵션으로 | 실사용 패턴 |
 | 8 | think-cell·그룹 도형 다이어그램은 '[원본 확인 필요]'로 표시 (현재 동작 유지) | 변환 불가 |
+
+→ 1~3, 5~7 은 반영 완료 (2026-11-25). 기준 템플릿: `scripts/build_base_template.py`, 설정: `config/mb_dark.toml`.
 
 분석 스크립트: `python scripts/analyze_template.py <템플릿.pptx>` (JSON 출력)

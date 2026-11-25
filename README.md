@@ -49,6 +49,28 @@ python -m slide_converter input/sample_input.pptx -c config/company.example.toml
    - `[layouts.descriptions]` : 각 레이아웃의 용도 설명 (Claude 가 레이아웃을 고를 때 참고)
    - `[layouts.defaults]` : AI 미사용 변환·보정 시 쓸 기본 레이아웃
 
+## Mercedes-Benz 다크 템플릿 (Pioneering Next)
+
+템플릿 파일은 사내 자료라 저장소에 넣지 않습니다. 다크 마스터가 들어 있는 덱 하나로 기준 템플릿을 만듭니다.
+
+```bash
+python scripts/build_base_template.py <다크 덱.pptx> --list
+```
+
+```bash
+python scripts/build_base_template.py <다크 덱.pptx> templates/mb_dark.pptx --master 2
+```
+
+슬라이드·다른 마스터를 지우고 한글 폰트(맑은 고딕)를 테마에 지정합니다. 그 다음 변환합니다.
+
+```bash
+python -m slide_converter input/보고서.pptx -c config/mb_dark.toml --footer "STARSEEKER KICKOFF | NOVEMBER 2026" --classification INTERNAL
+```
+
+`config/mb_dark.toml` 이 적용하는 서식: 왼쪽 정렬 제목 28pt + 시안 강조 바, 같은 상자 안 부제 14pt(tx2), 본문 16/14/12pt,
+가로 구분선 표(머리행 시안), 태그라인 `PIONEERING NEXT`, 바닥글, 보안 등급 라벨, 쪽번호 없음.
+분석 근거는 `docs/template_analysis.md` 참고.
+
 ## 사용법
 
 ```bash
@@ -69,6 +91,8 @@ python -m slide_converter input/보고서.pptx -c config/company.toml --no-ai
 | `-t, --template` | 템플릿 경로 (설정 파일보다 우선) |
 | `-o, --output` | 출력 경로 (기본 `output/<원본>_converted.pptx`) |
 | `--model` | Claude 모델 ID (기본 `claude-opus-5-5`) |
+| `--footer` | 바닥글 텍스트 (설정보다 우선) |
+| `--classification` | 보안 등급 라벨 (`INTERNAL`, `CONFIDENTIAL`) |
 | `--no-ai` | Claude 없이 단순 변환 |
 | `--dump-plan` / `--from-plan` | 변환 계획 저장 / 재사용 |
 | `--inspect-template` | 템플릿 레이아웃 목록 출력 |
@@ -101,7 +125,11 @@ slide_converter/
   models.py     데이터 모델 (Pydantic 스키마 포함)
   config.py     TOML 설정 로딩
   pptx_io.py    .potx 열기, 예시 슬라이드 제거
-config/company.example.toml
-scripts/make_samples.py   예시 템플릿·원본 생성
+config/company.example.toml   일반 예시 설정
+config/mb_dark.toml           MB 다크 템플릿 설정
+scripts/make_samples.py       예시 템플릿·원본 생성
+scripts/build_base_template.py  회사 덱 → 깨끗한 기준 템플릿
+scripts/analyze_template.py     템플릿 구조 분석 (JSON)
+docs/template_analysis.md       MB 템플릿 분석 결과
 tests/
 ```

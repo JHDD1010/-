@@ -33,6 +33,8 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("-o", "--output", help="출력 .pptx 경로 (기본: output/<원본>_converted.pptx)")
     p.add_argument("--no-ai", action="store_true", help="Claude 없이 1:1 서식 변환만 수행")
     p.add_argument("--model", help="Claude 모델 ID (기본: 설정 파일 또는 claude-opus-5-5)")
+    p.add_argument("--footer", help="바닥글 텍스트 (설정 파일보다 우선). 예: 'STARSEEKER KICKOFF | NOVEMBER 2026'")
+    p.add_argument("--classification", help="보안 등급 라벨 (예: INTERNAL, CONFIDENTIAL). 빈 문자열이면 없음")
     p.add_argument("--dump-plan", metavar="JSON", help="변환 계획을 JSON 으로 저장 (검토/수정용)")
     p.add_argument("--from-plan", metavar="JSON", help="저장된 변환 계획으로 렌더링만 수행")
     p.add_argument("--inspect-template", metavar="TEMPLATE", help="템플릿 레이아웃 목록만 출력")
@@ -54,6 +56,10 @@ def main(argv: list[str] | None = None) -> int:
     cfg = load_config(args.config)
     if args.model:
         cfg.model = args.model
+    if args.footer is not None:
+        cfg.footer_text = args.footer
+    if args.classification is not None:
+        cfg.classification = args.classification
     template = Path(args.template) if args.template else cfg.template_path
     if not template or not template.exists():
         print(f"템플릿을 찾을 수 없습니다: {template}", file=sys.stderr)
@@ -64,7 +70,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"[1/3] 원본 추출: {src_path}")
     slides = extract_slides(src_path)
-    catalog = build_catalog(open_presentation(template), cfg.layout_descriptions)
+    catalog = build_catalog(open_presentation(template), cfg.layout_descriptions, cfg.allowed_layouts)
     print(f"      원본 {len(slides)}장, 템플릿 레이아웃 {len(catalog)}개")
 
     if args.from_plan:

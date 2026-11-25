@@ -21,14 +21,34 @@ class CompanyConfig:
     model: str = "claude-opus-5-5"
     effort: str = "high"
     style_guide: str = DEFAULT_STYLE_GUIDE
+
+    # 레이아웃
     layout_descriptions: dict[str, str] = field(default_factory=dict)
+    allowed_layouts: list[str] = field(default_factory=list)  # 비우면 전부
     # 단순 변환(--no-ai) 및 보정용 기본 레이아웃: title / section / content / two_content
     preferred_layouts: dict[str, str] = field(default_factory=dict)
+    # content 칸이 없는 레이아웃에서 본문을 놓을 영역 [left, top, width, height] (cm)
+    content_area_cm: list[float] | None = None
+
+    # 표지
     add_cover: bool = True
     cover_title: str = ""
     cover_subtitle: str = ""
+
+    # 서식
+    title_style: str = "layout"  # "layout" = 레이아웃 그대로 / "left_accent" = 왼쪽 정렬 + 강조 바
+    title_size: float | None = None  # pt, None 이면 레이아웃 값
+    subheadline_size: float | None = None
+    body_sizes: list[float] = field(default_factory=list)  # 글머리 수준별 pt, 비우면 레이아웃 값
     table_font_size: int = 12
+    table_style: str = "default"  # "default" = PowerPoint 기본 표 스타일 / "lines" = 가로 구분선만
     max_bullets: int = 6
+
+    # 반복 요소
+    footer_text: str = ""  # 오른쪽 아래 바닥글
+    tagline: str = ""  # 왼쪽 아래 (날짜 placeholder 자리)
+    slide_numbers: bool = True
+    classification: str = ""  # 예: "INTERNAL", "CONFIDENTIAL" — 오른쪽 위 라벨
 
 
 def load_config(path: str | Path | None) -> CompanyConfig:
@@ -51,13 +71,27 @@ def load_config(path: str | Path | None) -> CompanyConfig:
     style = data.get("style", {})
     cfg.style_guide = style.get("guide", cfg.style_guide)
     cfg.table_font_size = style.get("table_font_size", cfg.table_font_size)
+    cfg.table_style = style.get("table_style", cfg.table_style)
     cfg.max_bullets = style.get("max_bullets", cfg.max_bullets)
+    cfg.title_style = style.get("title_style", cfg.title_style)
+    cfg.title_size = style.get("title_size", cfg.title_size)
+    cfg.subheadline_size = style.get("subheadline_size", cfg.subheadline_size)
+    cfg.body_sizes = list(style.get("body_sizes", cfg.body_sizes))
 
     cover = data.get("cover", {})
     cfg.add_cover = cover.get("enabled", cfg.add_cover)
     cfg.cover_title = cover.get("title", "")
     cfg.cover_subtitle = cover.get("subtitle", "")
 
-    cfg.layout_descriptions = dict(data.get("layouts", {}).get("descriptions", {}))
-    cfg.preferred_layouts = dict(data.get("layouts", {}).get("defaults", {}))
+    deck = data.get("deck", {})
+    cfg.footer_text = deck.get("footer", cfg.footer_text)
+    cfg.tagline = deck.get("tagline", cfg.tagline)
+    cfg.slide_numbers = deck.get("slide_numbers", cfg.slide_numbers)
+    cfg.classification = deck.get("classification", cfg.classification)
+
+    layouts = data.get("layouts", {})
+    cfg.layout_descriptions = dict(layouts.get("descriptions", {}))
+    cfg.preferred_layouts = dict(layouts.get("defaults", {}))
+    cfg.allowed_layouts = list(layouts.get("allowed", []))
+    cfg.content_area_cm = layouts.get("content_area_cm")
     return cfg

@@ -25,7 +25,9 @@ SYSTEM_PROMPT = """\
 - 스타일 가이드의 문체·분량 규칙에 맞게 문장을 다듬고, 분량이 넘치면 슬라이드를 나누고, 지나치게 빈약한 연속 슬라이드는 합칠 수 있습니다.
 - 원본 이미지는 image_ids 로만 참조하며, 존재하는 id 만 사용합니다. 의미 있는 이미지는 빠뜨리지 않습니다.
 - 차트 등 옮길 수 없는 요소(other_elements)는 발표자 노트에 '[원본 확인 필요] ...' 로 남깁니다.
-- 원본 발표자 노트는 notes 에 보존합니다.
+- 원본 발표자 노트는 notes 에 보존합니다. 출처·주석은 footnote 에 넣습니다.
+- 출력 언어는 스타일 가이드를 따르고, 가이드에 언급이 없으면 원본 언어를 그대로 유지합니다 (번역하지 않음).
+- 카탈로그에서 content_areas 가 없는 레이아웃이라도 글머리·표·이미지는 기본 본문 영역에 배치되므로 사용할 수 있습니다.
 - source_slides 에 근거가 된 원본 슬라이드 번호를 적습니다.
 """
 
@@ -107,42 +109,47 @@ def plan_simple(
         )
 
     for i, s in enumerate(slides):
-        is_cover = i == 0 and cfg.add_cover and not cfg.cover_title and not s.tables and not s.images and len(s.paragraphs) <= 2
+        first_like = i == 0 and not s.tables and len(s.paragraphs) <= 3
+        is_cover = cfg.add_cover and not cfg.cover_title and (s.is_title_slide or first_like) and i < 2
         n_items = (1 if s.paragraphs else 0) + len(s.tables[:1]) + len(s.images)
-        if is_cover:
-            kind = "title"
-        elif n_items == 0:
-            kind = "section"
-        elif n_items >= 2:
-            kind = "two_content"
-        else:
-            kind = "content"
 
         table = None
         if s.tables and s.tables[0].rows:
             rows = s.tables[0].rows
-            table = Table(header=rows[0], rows=rows[1:])
+            # 첫 행에 숫자가 있으면 데이터 행으로 본다 (예: 아젠다 '15min | Intro')
+            has_header = len(rows) > 1 and not any(ch.isdigit() for cell in rows[0] for ch in cell)
+            table = Table(header=rows[0], rows=rows[1:]) if has_header else Table(header=[], rows=rows)
 
         notes = s.notes
         if s.other:
             notes = (notes + "\n" if notes else "") + "\n".join(f"[원본 확인 필요] {o}" for o in s.other)
 
         if is_cover:
+            kind = "cover_picture" if s.images and "cover_picture" in pref else "title"
+            subtitle = s.subtitle or " / ".join(p.text for p in s.paragraphs[:2])
             out.append(
                 PlannedSlide(
-                    layout=pick_layout_name(catalog, kind="title", preferred=pref),
+                    layout=pref.get(kind) or pick_layout_name(catalog, kind="title", preferred=pref),
                     title=s.title or (s.paragraphs[0].text if s.paragraphs else ""),
-                    subtitle=" / ".join(p.text for p in s.paragraphs) if s.title else None,
+                    subtitle=subtitle or None,
+                    image_ids=[im.id for im in s.images[:1]] if kind == "cover_picture" else [],
                     notes=notes,
                     source_slides=[s.number],
                 )
             )
             continue
 
+        if n_items == 0:
+            kind = "section"
+        elif n_items >= 2:
+            kind = "two_content"
+        else:
+            kind = "content"
         out.append(
             PlannedSlide(
                 layout=pick_layout_name(catalog, kind=kind, preferred=pref),
                 title=s.title,
+                subtitle=s.subtitle or None,
                 bullets=[Bullet(text=p.text, level=p.level) for p in s.paragraphs],
                 table=table,
                 image_ids=[im.id for im in s.images],

@@ -1,0 +1,77 @@
+# Mercedes-Benz 다크 'Pioneering Next' 템플릿 설정
+#
+# 기준 템플릿 만들기 (템플릿 파일은 사내 자료라 저장소에 올리지 않음):
+#   python scripts/build_base_template.py <다크 마스터가 있는 덱.pptx> --list
+#   python scripts/build_base_template.py <덱.pptx> templates/mb_dark.pptx --master <번호>
+
+[template]
+path = "../templates/mb_dark.pptx"
+
+[ai]
+model = "claude-opus-5-5"
+effort = "high"
+
+[deck]
+footer = "PROJECT NAME | MONTH 2026"   # 오른쪽 아래 (자동 대문자, 8pt). 덱마다 바꾸거나 비워두세요
+tagline = "Pioneering Next"            # 왼쪽 아래
+slide_numbers = false                  # 원본 MB 덱들은 쪽번호를 쓰지 않음
+classification = ""                    # "INTERNAL" 또는 "CONFIDENTIAL" 이면 오른쪽 위 라벨
+
+[cover]
+enabled = true
+title = ""        # 비우면 원본 첫 장에서 가져옴
+subtitle = ""
+
+[style]
+title_style = "left_accent"   # 왼쪽 정렬 제목 + 시안 강조 바 (MB 다크 덱 실사용 방식)
+title_size = 28
+subheadline_size = 14
+body_sizes = [16, 14, 12]     # 글머리 1/2/3단계
+table_font_size = 12
+table_style = "lines"         # 배경 없음, 가로 구분선만, 머리행 시안
+max_bullets = 6
+guide = """
+- Keep the language of the source deck (usually English). Do not translate.
+- Headline: one message-driven line, max ~60 characters, sentence case
+  (e.g. "One network, one heartbeat: the Global StarSeeker Scouting Network").
+- Subheadline: one short line that states the takeaway or scope of the slide.
+- Bullets: max 6 per slide, max ~15 words each, no trailing periods, parallel phrasing.
+  Split the slide instead of shrinking text.
+- Keep all numbers, names, dates, units and product names exactly as in the source.
+  Never invent facts. Dates as DD.MM.YYYY.
+- Use a table for comparisons, matrices, schedules and numeric data.
+- Agenda slides: one bullet per item, "<duration>  <topic>" when durations exist.
+- Put sources and remarks in the footnote, not in the bullets.
+"""
+
+[layouts]
+# Claude 에게 보여줄 레이아웃만 (다크 마스터 17개 중 실사용 위주)
+# 주의: 다크 마스터에서는 이름과 실제 배경이 반대입니다.
+#       "(White Background)" 레이아웃이 어두운 배경, "(Black Background)" 가 밝은 배경으로 나옵니다.
+allowed = [
+  "Title, Subheadline (White Background)",
+  "Title, Subheadline, Picture (White Background)",
+  "Agenda Centre-Aligned",
+  "Chapter (White Background)",
+  "Headline, Subheadline (Smaller Text)",
+  "Headline Only 02",
+  "Title, Subheadline, Full-Page Picture (Dark) 01",
+]
+# 이 레이아웃들에는 본문 칸이 없으므로 본문은 아래 영역에 배치 (제목 아래 ~ 각주 위)
+content_area_cm = [1.53, 5.6, 30.81, 11.1]
+
+[layouts.descriptions]
+"Title, Subheadline (White Background)" = "Cover: short deck title (rendered all caps, very large; keep it under ~30 characters) + subtitle with event and date. No bullets"
+"Title, Subheadline, Picture (White Background)" = "Cover with one key visual above the title (only when the source cover has an image). No bullets"
+"Agenda Centre-Aligned" = "Agenda: agenda items as bullets (level 0 only, max 7, short), no title, no subtitle"
+"Chapter (White Background)" = "Chapter divider: title = short chapter name, nothing else"
+"Headline, Subheadline (Smaller Text)" = "Standard content slide: headline + subheadline, body (bullets / table / images) below"
+"Headline Only 02" = "Statement slide: title = one large message, nothing else"
+"Title, Subheadline, Full-Page Picture (Dark) 01" = "Full-bleed image with title (use only for a single strong image)"
+
+[layouts.defaults]
+title = "Title, Subheadline (White Background)"
+cover_picture = "Title, Subheadline, Picture (White Background)"
+section = "Chapter (White Background)"
+content = "Headline, Subheadline (Smaller Text)"
+two_content = "Headline, Subheadline (Smaller Text)"
