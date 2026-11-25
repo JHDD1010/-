@@ -190,6 +190,13 @@ def _draw_table(slide, ph, box: Box, table: Table, cfg: CompanyConfig) -> None:
     shape = slide.shapes.add_table(len(data), n_cols, box.left, box.top, box.width, height)
     tbl = shape.table
     tbl.first_row = bool(table.header)
+    # 열 너비: 각 열의 가장 긴 텍스트 길이에 비례 (최소 12%)
+    lens = [max((len(row[c]) if c < len(row) else 0) for row in data) or 1 for c in range(n_cols)]
+    total = sum(lens)
+    ratios = [max(0.12, l / total) for l in lens]
+    norm = sum(ratios)
+    for c, col in enumerate(tbl.columns):
+        col.width = int(box.width * ratios[c] / norm)
     for r, row in enumerate(data):
         for c in range(n_cols):
             cell = tbl.cell(r, c)

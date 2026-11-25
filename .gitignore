@@ -10,3 +10,4 @@ input/*
 config/company.toml
 templates/*
 !templates/.gitkeep
+work/
