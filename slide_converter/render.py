@@ -185,7 +185,8 @@ def _draw_table(slide, ph, box: Box, table: Table, cfg: CompanyConfig) -> None:
     if not data:
         return
     n_cols = max(len(r) for r in data)
-    row_h = Pt(cfg.table_font_size * 2.2)
+    font_size = table.font_size or cfg.table_font_size
+    row_h = Pt(font_size * 2.2)
     height = min(box.height, int(row_h * len(data)))
     shape = slide.shapes.add_table(len(data), n_cols, box.left, box.top, box.width, height)
     tbl = shape.table
@@ -203,7 +204,7 @@ def _draw_table(slide, ph, box: Box, table: Table, cfg: CompanyConfig) -> None:
             cell.text = row[c] if c < len(row) else ""
             for p in cell.text_frame.paragraphs:
                 for run in p.runs:
-                    run.font.size = Pt(cfg.table_font_size)
+                    run.font.size = Pt(font_size)
     if cfg.table_style == "lines":
         _style_table_lines(shape, bool(table.header))
 

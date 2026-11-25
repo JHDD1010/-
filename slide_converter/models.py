@@ -91,6 +91,7 @@ class Bullet(BaseModel):
 class Table(BaseModel):
     header: list[str]
     rows: list[list[str]]
+    font_size: int | None = Field(default=None, description="표 글자 크기(pt). 비우면 설정값. 행이 많을 때만 줄인다")
 
 
 class PlannedSlide(BaseModel):
