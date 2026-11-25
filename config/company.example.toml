@@ -1,0 +1,45 @@
+# 본사 템플릿 변환 설정 예시
+# 복사해서 config/company.toml 로 쓰고, 경로·스타일 가이드를 회사 기준으로 바꾸세요.
+
+[template]
+# 이 파일 기준 상대경로 또는 절대경로 (.pptx / .potx)
+path = "../templates/sample_company_template.pptx"
+
+[ai]
+model = "claude-opus-5-5"
+effort = "high"          # low | medium | high | xhigh | max
+
+[cover]
+enabled = true           # 첫 장을 표지로 구성
+title = ""               # 비워두면 원본 첫 장에서 가져옴
+subtitle = ""
+
+[style]
+max_bullets = 6
+table_font_size = 12
+guide = """
+- 문체: 개조식, 명사형 종결(예: '~함', '~임', '~ 추진'). 존댓말 문장체 금지.
+- 슬라이드 제목은 20자 이내, 핵심 메시지를 담을 것.
+- 제목 아래 부제(헤드라인)에 슬라이드의 결론을 한 문장으로 요약할 것.
+- 글머리는 한 줄 40자 이내. 넘치면 슬라이드를 나눌 것.
+- 숫자·단위·고유명사는 원문 그대로 유지하고, 원문에 없는 사실을 만들지 말 것.
+- 비교·수치 데이터는 표로 정리할 것.
+- 금액 표기: 억원 단위, 천 단위 콤마.
+"""
+
+[layouts.descriptions]
+# 템플릿 레이아웃 이름 = Claude 에게 줄 용도 설명
+# (이름은 `python -m slide_converter --inspect-template <템플릿>` 으로 확인)
+"Title Slide" = "표지. 제목 + 부서/날짜"
+"Title and Content" = "일반 본문. 글머리 또는 표/이미지 하나"
+"Section Header" = "장(章) 구분 간지"
+"Two Content" = "좌우 2단. 글머리 + 표/이미지 병치"
+"Comparison" = "좌우 비교 (각 영역 위에 소제목)"
+"Title Only" = "제목만 있고 나머지는 자유 배치"
+
+[layouts.defaults]
+# AI 미사용(--no-ai) 변환과 레이아웃 보정 시 사용할 기본 레이아웃
+title = "Title Slide"
+section = "Section Header"
+content = "Title and Content"
+two_content = "Two Content"

@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.pytest_cache/
+output/*
+!output/.gitkeep
+input/*
+!input/.gitkeep
+config/company.toml
+templates/*
+!templates/.gitkeep
