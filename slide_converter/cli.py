@@ -33,6 +33,13 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("-o", "--output", help="출력 .pptx 경로 (기본: output/<원본>_converted.pptx)")
     p.add_argument("--no-ai", action="store_true", help="Claude 없이 1:1 서식 변환만 수행")
     p.add_argument("--model", help="Claude 모델 ID (기본: 설정 파일 또는 claude-opus-5-5)")
+    p.add_argument(
+        "--insert",
+        action="append",
+        default=[],
+        metavar="PPTX@N",
+        help="다른 .pptx 의 슬라이드를 원래 디자인 그대로 N번째 장 뒤에 넣음 (0 = 맨 앞). 여러 번 지정 가능",
+    )
     p.add_argument("--footer", help="바닥글 텍스트 (설정 파일보다 우선). 예: 'STARSEEKER KICKOFF | NOVEMBER 2026'")
     p.add_argument("--classification", help="보안 등급 라벨 (예: INTERNAL, CONFIDENTIAL). 빈 문자열이면 없음")
     p.add_argument("--dump-plan", metavar="JSON", help="변환 계획을 JSON 으로 저장 (검토/수정용)")
@@ -97,7 +104,20 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"[3/3] 템플릿 적용: {template}")
     out = render_deck(plan, slides, template, output, cfg)
-    print(f"완료: {out} ({len(plan.slides)}장)")
+    total = len(plan.slides)
+    if args.insert:
+        from .merge import import_slides
+        from .pptx_io import open_presentation as _open
+
+        prs = _open(out)
+        # 뒤쪽 위치부터 넣어야 앞쪽 번호가 밀리지 않는다
+        for spec in sorted(args.insert, key=lambda x: -int(x.rsplit("@", 1)[1])):
+            path, pos = spec.rsplit("@", 1)
+            n = import_slides(prs, path, position=int(pos))
+            total += n
+            print(f"      삽입: {path} ({n}장, {pos}번째 장 뒤)")
+        prs.save(str(out))
+    print(f"완료: {out} ({total}장)")
     return 0
 
 

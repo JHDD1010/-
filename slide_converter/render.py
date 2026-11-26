@@ -56,14 +56,21 @@ class Box:
     width: int
     height: int
 
-    def split(self, n: int, horizontal: bool, gap: int) -> list["Box"]:
+    def split(self, n: int, horizontal: bool, gap: int, weights: list[float] | None = None) -> list["Box"]:
         if n <= 1:
             return [self]
         if horizontal:
             w = (self.width - gap * (n - 1)) // n
             return [Box(self.left + i * (w + gap), self.top, w, self.height) for i in range(n)]
-        h = (self.height - gap * (n - 1)) // n
-        return [Box(self.left, self.top + i * (h + gap), self.width, h) for i in range(n)]
+        weights = weights or [1.0] * n
+        total = sum(weights)
+        usable = self.height - gap * (n - 1)
+        boxes, top = [], self.top
+        for wgt in weights:
+            h = int(usable * wgt / total)
+            boxes.append(Box(self.left, top, self.width, h))
+            top += h + gap
+        return boxes
 
 
 def _box_of(shape) -> Box:
@@ -178,6 +185,25 @@ def _style_table_lines(shape, header: bool) -> None:
                     )
 
 
+_HLINK_CLR_EXT = "{A12FA001-AC4F-418D-AE19-62706E023703}"
+_HLINK_CLR_NS = "http://schemas.microsoft.com/office/drawing/2018/hyperlinkcolor"
+
+
+def _link(run, url: str) -> None:
+    """하이퍼링크를 걸되 글자색은 테마 hlink 색 대신 일반 글자색(tx)을 따르게 한다.
+
+    MB 테마는 hlink 색이 검정이라 다크 배경에서 링크가 보이지 않는다.
+    """
+    run.hyperlink.address = url
+    click = run._r.find(qn("a:rPr") + "/" + qn("a:hlinkClick"))
+    ext_lst = etree.SubElement(click, qn("a:extLst"))
+    ext = etree.SubElement(ext_lst, qn("a:ext"))
+    ext.set("uri", _HLINK_CLR_EXT)
+    clr = etree.SubElement(ext, f"{{{_HLINK_CLR_NS}}}hlinkClr", nsmap={"ahyp": _HLINK_CLR_NS})
+    clr.set("val", "tx")
+    run.font.color.theme_color = MSO_THEME_COLOR.TEXT_1
+
+
 def _draw_table(slide, ph, box: Box, table: Table, cfg: CompanyConfig) -> None:
     if ph is not None:
         _remove(ph)
@@ -202,9 +228,15 @@ def _draw_table(slide, ph, box: Box, table: Table, cfg: CompanyConfig) -> None:
         for c in range(n_cols):
             cell = tbl.cell(r, c)
             cell.text = row[c] if c < len(row) else ""
+            url = ""
+            data_r = r - (1 if table.header else 0)
+            if table.links and data_r >= 0 and data_r < len(table.links) and c < len(table.links[data_r]):
+                url = table.links[data_r][c]
             for p in cell.text_frame.paragraphs:
                 for run in p.runs:
                     run.font.size = Pt(font_size)
+                    if url:
+                        _link(run, url)
     if cfg.table_style == "lines":
         _style_table_lines(shape, bool(table.header))
 
@@ -382,6 +414,16 @@ def _set_notes(slide, text: str) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _weight(kind: str, payload) -> float:
+    """세로로 나눌 때 항목별 높이 비중 (대략적인 줄 수, 최소 2줄)."""
+    if kind == "bullets":
+        return max(2.0, sum(1 + len(b.text) // 95 for b in payload) * 1.2)
+    if kind == "table":
+        rows = ([payload.header] if payload.header else []) + payload.rows
+        return max(2.0, sum(1 + max((len(c) for c in r), default=0) // 70 for r in rows) * 1.1)
+    return 6.0
+
+
 def _default_area(prs, cfg: CompanyConfig) -> Box:
     if cfg.content_area_cm:
         return _cm_box(cfg.content_area_cm)
@@ -479,7 +521,7 @@ def _render_slide(prs, ps: PlannedSlide, images: dict[str, SourceImage], cfg: Co
             host = free.pop(0) if free else None
             area = _box_of(host) if host is not None else _default_area(prs, cfg)
             horizontal = not any(k == "table" for k, _ in overflow) and area.width > area.height
-            boxes = area.split(len(overflow), horizontal, gap=int(Cm(0.6)))
+            boxes = area.split(len(overflow), horizontal, gap=int(Cm(0.6)), weights=[_weight(k, p) for k, p in overflow])
             for idx, ((kind, payload), box) in enumerate(zip(overflow, boxes)):
                 ph = host if (host is not None and (kind == "bullets" or idx == 0)) else None
                 if ph is host:

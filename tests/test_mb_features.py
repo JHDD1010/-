@@ -138,3 +138,35 @@ def test_extract_textbox_title_and_noise_filter(tmp_path):
     assert len(src.images) == 1
     assert any("배경 이미지" in o for o in src.other)
     assert any("아이콘 1개" in o for o in src.other)
+
+
+def test_import_slides_keeps_source_design_and_links(template, tmp_path):
+    from slide_converter.merge import import_slides
+    from slide_converter.pptx_io import open_presentation
+
+    src = tmp_path / "src.pptx"
+    p = Presentation()
+    tpl = Presentation(str(template))
+    p.slide_width, p.slide_height = tpl.slide_width, tpl.slide_height
+    s = p.slides.add_slide(p.slide_layouts[5])
+    s.shapes.title.text = "Imported one-pager"
+    s.shapes.add_picture(io.BytesIO(make_samples._png(30, 30)), Cm(2), Cm(5), Cm(4), Cm(4))
+    p.save(str(src))
+
+    plan = DeckPlan(slides=[
+        PlannedSlide(layout="Title Only", title="A", table=Table(header=["Post"], rows=[["Link"]], links=[["https://example.com/x"]])),
+        PlannedSlide(layout="Title Only", title="B"),
+    ])
+    out = render_deck(plan, [], template, tmp_path / "o.pptx", CompanyConfig(content_area_cm=[1.5, 5.6, 30.8, 11]))
+    prs = open_presentation(out)
+    masters_before = len(prs.slide_masters)
+    assert import_slides(prs, src, position=1) == 1
+    prs.save(str(out))
+
+    res = Presentation(str(out))
+    titles = [sl.shapes.title.text for sl in res.slides]
+    assert titles == ["A", "Imported one-pager", "B"]
+    assert len(res.slide_masters) == masters_before + 1
+    assert any(sh.shape_type == 13 for sh in res.slides[1].shapes)  # 그림도 함께 복사
+    cell_run = next(sh for sh in res.slides[0].shapes if sh.has_table).table.cell(1, 0).text_frame.paragraphs[0].runs[0]
+    assert cell_run.hyperlink.address == "https://example.com/x"

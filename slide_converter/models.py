@@ -92,6 +92,7 @@ class Table(BaseModel):
     header: list[str]
     rows: list[list[str]]
     font_size: int | None = Field(default=None, description="표 글자 크기(pt). 비우면 설정값. 행이 많을 때만 줄인다")
+    links: list[list[str]] | None = Field(default=None, description="rows 와 같은 모양의 URL 목록 (링크 없는 칸은 빈 문자열). 해당 칸 텍스트에 하이퍼링크를 건다")
 
 
 class PlannedSlide(BaseModel):

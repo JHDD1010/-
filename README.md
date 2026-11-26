@@ -92,6 +92,7 @@ python -m slide_converter input/보고서.pptx -c config/company.toml --no-ai
 | `-o, --output` | 출력 경로 (기본 `output/<원본>_converted.pptx`) |
 | `--model` | Claude 모델 ID (기본 `claude-opus-5-5`) |
 | `--footer` | 바닥글 텍스트 (설정보다 우선) |
+| `--insert PPTX@N` | 다른 덱의 슬라이드를 원래 디자인(마스터·이미지 포함) 그대로 N번째 장 뒤에 삽입 |
 | `--classification` | 보안 등급 라벨 (`INTERNAL`, `CONFIDENTIAL`) |
 | `--no-ai` | Claude 없이 단순 변환 |
 | `--dump-plan` / `--from-plan` | 변환 계획 저장 / 재사용 |
